@@ -34,6 +34,7 @@ import dpf.sp.gpinf.indexer.analysis.CategoryTokenizer;
 import dpf.sp.gpinf.indexer.config.ConfigurationManager;
 import dpf.sp.gpinf.indexer.config.SleuthKitConfig;
 import dpf.sp.gpinf.indexer.datasource.SleuthkitReader;
+import dpf.sp.gpinf.indexer.process.IndexItem;
 import dpf.sp.gpinf.indexer.process.Statistics;
 import dpf.sp.gpinf.indexer.process.task.ImageThumbTask;
 import dpf.sp.gpinf.indexer.util.EmptyInputStream;
@@ -130,10 +131,17 @@ public class Item implements ISleuthKitItem {
     private Integer ftkID;
 
     private Integer parentId;
+    
+    private Integer subitemId;
 
     private List<Integer> parentIds = new ArrayList<Integer>();
 
     private Map<String, Object> extraAttributes = new ConcurrentHashMap<String, Object>();
+    
+    /**
+     * Temporaty attributes present only during processing flow.
+     */
+    private Map<String, Object> tempAttributes = new HashMap<>();
 
     /**
      * Data de criação do arquivo.
@@ -219,6 +227,8 @@ public class Item implements ISleuthKitItem {
     private Integer sleuthId;
 
     private String idInDataSource;
+    
+    private String parentIdInDataSource;
 
     private TikaInputStream tis;
 
@@ -496,6 +506,10 @@ public class Item implements ISleuthKitItem {
     public Integer getParentId() {
         return parentId;
     }
+    
+    public Integer getSubitemId() {
+        return subitemId;
+    }
 
     /**
      *
@@ -510,12 +524,15 @@ public class Item implements ISleuthKitItem {
      * @return ids dos itens pai concatenados com espaço
      */
     public String getParentIdsString() {
-        String parents = ""; //$NON-NLS-1$
+        StringBuilder parents = new StringBuilder(); //$NON-NLS-1$
+        int i = 0;
         for (Integer id : parentIds) {
-            parents += id + " "; //$NON-NLS-1$
+            parents.append(id);
+            if(++i < parentIds.size()) {
+                parents.append(" ");
+            }
         }
-
-        return parents;
+        return parents.toString();
     }
 
     /**
@@ -1072,6 +1089,10 @@ public class Item implements ISleuthKitItem {
         int p = name.lastIndexOf("."); //$NON-NLS-1$
         extension = (p < 0) ? "" : name.substring(p + 1).toLowerCase(); //$NON-NLS-1$
     }
+    
+    public void setSubitemId(Integer subitemId) {
+        this.subitemId = subitemId;
+    }
 
     /**
      * @param parentId
@@ -1087,6 +1108,7 @@ public class Item implements ISleuthKitItem {
         this.addParentIds(parent.getParentIds());
         this.addParentId(parentId);
         this.setDataSource(parent.getDataSource());
+        this.setParentIdInDataSource(parent.getIdInDataSource());
     }
 
     public void setParent(ParentInfo parent) {
@@ -1095,6 +1117,7 @@ public class Item implements ISleuthKitItem {
         this.addParentIds(parent.getParentIds());
         this.addParentId(parentId);
         this.setDataSource(parent.getDataSource());
+        this.setExtraAttribute(IndexItem.PARENT_PERSISTENT_ID, parent.getPersistentId());
     }
 
     /**
@@ -1315,6 +1338,14 @@ public class Item implements ISleuthKitItem {
     public void setIdInDataSource(String idInDataSource) {
         this.idInDataSource = idInDataSource;
     }
+    
+    public void setParentIdInDataSource(String string) {
+        this.parentIdInDataSource = string;
+    }
+    
+    public String getParentIdInDataSource() {
+        return this.parentIdInDataSource;
+    }
 
     @Override
     public IItem createChildItem() {
@@ -1323,5 +1354,17 @@ public class Item implements ISleuthKitItem {
         child.setDeleted(this.isDeleted());
 
         return child;
+    }
+    
+    public Object getTempAttribute(String key) {
+        synchronized (tempAttributes) {
+            return tempAttributes.get(key);
+        }
+    }
+
+    public void setTempAttribute(String key, Object value) {
+        synchronized (tempAttributes) {
+            tempAttributes.put(key, value);
+        }
     }
 }

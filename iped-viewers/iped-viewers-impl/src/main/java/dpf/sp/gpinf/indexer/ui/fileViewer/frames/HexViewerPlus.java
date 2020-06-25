@@ -106,6 +106,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dpf.sp.gpinf.indexer.ui.fileViewer.Messages;
+import dpf.sp.gpinf.indexer.util.IOUtil;
 import dpf.sp.gpinf.indexer.util.SeekableFileInputStream;
 import iped3.io.IStreamSource;
 import iped3.io.SeekableInputStream;
@@ -463,6 +464,11 @@ public class HexViewerPlus extends Viewer implements KeyListener, MouseListener 
     @Override
     public void dispose() {
 
+    }
+    
+    @Override
+    public int getHitsSupported() {
+        return 1;
     }
 
     @Override
@@ -898,7 +904,7 @@ public class HexViewerPlus extends Viewer implements KeyListener, MouseListener 
             }
         });
 
-        fontComboBox.setModel(new javax.swing.DefaultComboBoxModel<String>((String[]) fonts.toArray()));
+        fontComboBox.setModel(new javax.swing.DefaultComboBoxModel<String>(fonts.toArray(new String[0])));
         fontComboBox.setSelectedItem(getAndVerifyFontName(font, fonts));
         fontComboBox.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2905,13 +2911,10 @@ class HVPTextField extends JTextField {
 
 class ByteArraySeekData extends ByteArrayEditableData {
 
-    protected byte[] data = new byte[0];
-
-    private long len, rows;
+    private long len;
     private Map<Long, int[]> memoBytes = new HashMap<Long, int[]>();
     private byte[] readBuf = new byte[1 << 12];
     private LinkedList<Long> fifo = new LinkedList<Long>();
-    private boolean err;
     private static final int MAX_MEMO = 2000;
 
     private SeekableInputStream file;
@@ -2924,23 +2927,13 @@ class ByteArraySeekData extends ByteArrayEditableData {
         if (file != null && file.equals(this.file)) {
             return;
         }
-        if (this.file != null) {
-            try {
-                this.file.close();
-            } catch (IOException e) {
-            }
-            this.file = null;
-        }
+        
+        clear();
 
         this.file = file;
-        len = 0;
-        rows = 0;
         if (file != null) {
             len = file.size();
         }
-        err = false;
-        memoBytes.clear();
-
     }
 
     @Override
@@ -2984,14 +2977,13 @@ class ByteArraySeekData extends ByteArrayEditableData {
 
         } catch (Exception e) {
             e.printStackTrace();
-            err = true;
             this.clear();
             fireReadError();
             return -1;
         }
 
     }
-
+    
     void fireReadError() {
         // do nothing by default
     }
@@ -3034,8 +3026,10 @@ class ByteArraySeekData extends ByteArrayEditableData {
 
     @Override
     public void clear() {
-        data = new byte[0];
+        len = 0;
         memoBytes.clear();
+        IOUtil.closeQuietly(file);
+        file = null;
     }
 
 }
@@ -3047,7 +3041,7 @@ class Hits {
 
 }
 
-class FilterComboBox extends JComboBox {
+class FilterComboBox extends JComboBox<String> {
 
     private List<String> entries;
 
@@ -3056,7 +3050,7 @@ class FilterComboBox extends JComboBox {
     }
 
     public FilterComboBox(List<String> entries) {
-        super(entries.toArray());
+        super(entries.toArray(new String[0]));
         this.entries = entries;
         this.setEditable(true);
 
@@ -3087,7 +3081,7 @@ class FilterComboBox extends JComboBox {
         }
 
         if (entriesFiltered.size() > 0) {
-            this.setModel(new DefaultComboBoxModel(entriesFiltered.toArray()));
+            this.setModel(new DefaultComboBoxModel<String>(entriesFiltered.toArray(new String[0])));
             this.setSelectedItem(enteredText);
             this.showPopup();
         } else {

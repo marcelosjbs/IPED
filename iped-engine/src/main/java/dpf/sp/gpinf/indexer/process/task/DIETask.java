@@ -192,6 +192,8 @@ public class DIETask extends AbstractTask {
     	synchronized (finished) {
     		graphicsMagicConverter.close();
             if (taskEnabled && !finished.get()) {
+                die = null;
+                predictor = null;
                 Log.info(taskName, "Total images processed: " + totalProcessed); //$NON-NLS-1$
                 Log.info(taskName, "Total images not processed: " + totalFailed); //$NON-NLS-1$
                 long total = totalProcessed.longValue() + totalFailed.longValue();
@@ -268,7 +270,7 @@ public class DIETask extends AbstractTask {
     private BufferedImage getBufferedImage(IItem evidence) {
         BufferedImage img = null;
         try {
-            if (ImageThumbTask.extractThumb && evidence.getMediaType().getSubtype().startsWith("jpeg")) { //$NON-NLS-1$
+            if (ImageThumbTask.extractThumb && ImageThumbTask.isJpeg(evidence)) { //$NON-NLS-1$
                 BufferedInputStream stream = evidence.getBufferedStream();
                 try {
                     img = ImageUtil.getThumb(stream);

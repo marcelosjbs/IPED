@@ -116,6 +116,8 @@ public class KFFCarveTask extends BaseCarveTask {
     public void finish() throws Exception {
         synchronized (finished) {
             if (taskEnabled && !finished.get()) {
+                md5_512 = null;
+                kffCarved.clear();
                 finished.set(true);
                 NumberFormat nf = new DecimalFormat("#,##0"); //$NON-NLS-1$
                 logger.info("Carved files: " + nf.format(numCarvedItems.get())); //$NON-NLS-1$
@@ -211,7 +213,7 @@ public class KFFCarveTask extends BaseCarveTask {
     private static boolean isAcceptedType(MediaType mediaType) {
         return mediaType.getBaseType().equals(UNALLOCATED_MIMETYPE) || mediaType.getBaseType().equals(mtPageFile)
                 || mediaType.getBaseType().equals(mtDiskImage) || mediaType.getBaseType().equals(mtUnknown)
-                || mediaType.getBaseType().equals(mtVdi) || mediaType.getBaseType().equals(mtVhd)
+                || mediaType.getBaseType().equals(mtVdi) || mediaType.getBaseType().equals(mtVhd) || mediaType.getBaseType().equals(mtVhdx)
                 || mediaType.getBaseType().equals(mtVmdk) || mediaType.getBaseType().equals(mtVolumeShadow);
     }
 }
